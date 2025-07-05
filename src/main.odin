@@ -3,18 +3,27 @@ package main
 import "core:fmt"
 import "core:time"
 
+import "terminal_utility"
+
 GameState :: enum {
 	PLAY,
 	SHOULD_EXIT,
 }
 
-WIDTH :: 100
-HEIGHT :: 42
+WIDTH :: 20
+HEIGHT :: 10
 
 TARGET_FPS :: 60
 DELAY :: time.Second / TARGET_FPS
 
 main :: proc() {
+	termios, ok := terminal_utility.enable_raw_mode()
+	if !ok {
+		fmt.println("Could not enable raw mode")
+		return
+	}
+	defer terminal_utility.disable_raw_mode(&termios)
+	
 	gameState := GameState.PLAY
 
 	renderMaps: RenderMaps
@@ -39,15 +48,16 @@ main :: proc() {
 
 		elapsed += dt
 
-		if elapsed >= time.Millisecond * 200 {
-			x += 1
-			elapsed = 0
-		}
-
 		clearMap(renderMaps.charMap[:])
 
+		key, keyLen := terminal_utility.read_keypress()
+
+		if key == 'd'{
+			x += 1
+		}
+
 		fpsString := fmt.bprint(buf[:], "FPS:", dt)
-		drawStr(renderMaps.charMap[:], 0, 0, fpsString)
+		drawStr(renderMaps.charMap[:], 0, x, fpsString)
 
 		elapsedString := fmt.bprint(buf[:], "Elapsed:", elapsed)
 		drawStr(renderMaps.charMap[:], 0, 1, elapsedString)
