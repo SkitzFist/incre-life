@@ -2,18 +2,35 @@ package main
 
 import "core:fmt"
 
+RENDER_WIDTH : int
+
 RenderMaps :: struct {
-	charMap:   [WIDTH * HEIGHT]u8,
-	stringMap: [HEIGHT]string,
+	charMap: [dynamic]u8,
+	stringMap:[dynamic]string,
 }
 
-prepareRenderMaps :: proc(renderMaps: ^RenderMaps) {
-	for &r in renderMaps^.charMap {
-		r = ' '
-	}
+delete_renderMaps :: proc(renderMaps:^RenderMaps){
+	delete(renderMaps^.stringMap)
+	delete(renderMaps^.charMap)
+}
 
-	for str, i in renderMaps^.stringMap {
-		renderMaps^.stringMap[i] = string(renderMaps^.charMap[i * WIDTH:i * WIDTH + WIDTH])
+prepareRenderMaps :: proc(renderMaps: ^RenderMaps, width:int, height:int) {
+	delete (renderMaps^.charMap)
+	renderMaps^.charMap = nil
+	
+	delete (renderMaps^.stringMap)
+	renderMaps^.stringMap = nil
+	
+	w := width - 1
+	h := height - 1
+	RENDER_WIDTH = w
+	
+	resize(&renderMaps^.charMap, w * h)
+	clearMap(renderMaps^.charMap[:])
+	
+	resize(&renderMaps^.stringMap, h)
+	for i in 0..<h {
+    	renderMaps^.stringMap[i] = string(renderMaps^.charMap[i * w : i * w + w])
 	}
 }
 
@@ -26,14 +43,16 @@ clearMap :: proc(charMap: []u8) {
 //---- Drawing ----//
 
 drawChar :: proc(charMap: []u8, x: int, y: int, char: rune) {
-	index := y * WIDTH + x
+	index := y * RENDER_WIDTH + x
+
+	if index >= len(charMap) {
+		return
+	}
 
 	charMap[index] = cast(u8)char
 }
 
 drawStr :: proc(charMap: []u8, x: int, y: int, str: string) {
-	startIndex := y * WIDTH + x
-
 	for r, i in str {
 		drawChar(charMap[:], x + i, y, r)
 	}

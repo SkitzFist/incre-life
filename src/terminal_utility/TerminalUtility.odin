@@ -56,18 +56,11 @@ WinSize :: struct{
 	rows, cols, xPixel, yPixel: u16
 }
 
-get_size :: proc() -> (width:int, height:int, ok:bool){
+get_size :: proc() -> (width:int, height:int){
 	TIOCGWINSZ :u32: 0x5413 //Request number from ioctl.h
 	ws := WinSize{}
 
 	result := linux.ioctl(linux.Fd(0), TIOCGWINSZ, uintptr(&ws))
 
-	
-	fmt.println("cols:", ws.cols)
-	fmt.println("rows:", ws.rows)
-	fmt.println("xPixel:", ws.xPixel)
-	fmt.println("yPixel:", ws.yPixel)
-
-	return int(ws.cols), int(ws.rows), true
+	return int(ws.cols), int(ws.rows)
 }
-
