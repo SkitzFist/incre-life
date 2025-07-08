@@ -2,6 +2,8 @@ package main
 
 import "core:fmt"
 import "core:time"
+import "core:os"
+import "core:terminal"
 
 import "terminal_utility"
 
@@ -10,13 +12,18 @@ GameState :: enum {
 	SHOULD_EXIT,
 }
 
-WIDTH :: 20
-HEIGHT :: 10
+WIDTH :: 139 - 1
+HEIGHT :: 69 - 1
 
 TARGET_FPS :: 60
 DELAY :: time.Second / TARGET_FPS
 
 main :: proc() {
+
+	{
+		tw, th, ok := terminal_utility.get_size()
+	}	
+
 	termios, ok := terminal_utility.enable_raw_mode()
 	if !ok {
 		fmt.println("Could not enable raw mode")
