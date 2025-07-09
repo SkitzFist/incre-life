@@ -3,9 +3,6 @@ package terminal_utility
 import "core:sys/posix"
 import "core:sys/linux"
 
-//Debug
-import "core:fmt"
-
 enable_raw_mode :: proc() -> (old_termios: posix.termios, ok: bool) {
     fd : posix.FD = 0 // stdin
     

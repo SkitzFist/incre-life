@@ -1,65 +1,60 @@
 package main
 
+import "core:sys/posix"
 import "core:fmt"
 
 RENDER_WIDTH : int
 
-RenderMaps :: struct {
-	charMap: [dynamic]u8,
-	stringMap:[dynamic]string,
+MAX_BUF_SIZE :: 32_768
+
+Renderer :: struct {
+	width : int,
+	height : int,
+	buf : [MAX_BUF_SIZE]u8,
 }
 
-delete_renderMaps :: proc(renderMaps:^RenderMaps){
-	delete(renderMaps^.stringMap)
-	delete(renderMaps^.charMap)
+set_new_size :: proc(renderer:^Renderer, newWidth: int, newHeight: int) {
+	renderer^.width = newWidth
+	renderer^.height = newHeight
+
+	clear(renderer)
 }
 
-prepareRenderMaps :: proc(renderMaps: ^RenderMaps, width:int, height:int) {
-	delete (renderMaps^.charMap)
-	renderMaps^.charMap = nil
-	
-	delete (renderMaps^.stringMap)
-	renderMaps^.stringMap = nil
-	
-	w := width - 1
-	h := height - 1
-	RENDER_WIDTH = w
-	
-	resize(&renderMaps^.charMap, w * h)
-	clearMap(renderMaps^.charMap[:])
-	
-	resize(&renderMaps^.stringMap, h)
-	for i in 0..<h {
-    	renderMaps^.stringMap[i] = string(renderMaps^.charMap[i * w : i * w + w])
+clear :: proc(renderer:^Renderer){
+	length := renderer^.width * renderer^.height
+
+	// whitespace
+	for i in 0..<length{
+		renderer^.buf[i] = cast(u8)' '
 	}
 }
 
-clearMap :: proc(charMap: []u8) {
-	for &r in charMap {
-		r = ' '
-	}
+render :: proc(renderer:^Renderer) {
+	fmt.print("\x1b[H") // move cursor to top left
+	length := cast(uint)(renderer^.width * renderer^.height)
+	posix.write(posix.FD(1), &renderer^.buf[0], length)
 }
 
 //---- Drawing ----//
 
-drawChar :: proc(charMap: []u8, x: int, y: int, char: rune) {
-	index := y * RENDER_WIDTH + x
+draw_rune :: proc(renderer:^Renderer, x: int, y: int, char: rune) {
+	index := y * renderer^.width + x
 
-	if index >= len(charMap) {
+	if index >= len(renderer^.buf) {
 		return
 	}
 
-	charMap[index] = cast(u8)char
+	renderer^.buf[index] = cast(u8)char
 }
 
-drawStr :: proc(charMap: []u8, x: int, y: int, str: string) {
+draw_str :: proc(renderer:^Renderer, x: int, y: int, str: string) {
 	for r, i in str {
-		drawChar(charMap[:], x + i, y, r)
+		draw_rune(renderer, x + i, y, r)
 	}
 }
 
-drawRect :: proc(
-	charMap: []u8,
+draw_rect :: proc(
+	renderer:^Renderer,
 	xPos: int,
 	yPos: int,
 	width: int,
@@ -86,19 +81,19 @@ drawRect :: proc(
 				r = fill
 			}
 
-			drawChar(charMap[:], x, y, r)
+			draw_rune(renderer, x, y, r)
 		}
 	}
 }
 
-drawLineH :: proc(charMap: []u8, xPos, yPos, length: int, fill: rune = '*') {
+draw_line_h :: proc(renderer:^Renderer, xPos, yPos, length: int, fill: rune = '*') {
 	for x := xPos; x < xPos + length; x += 1 {
-		drawChar(charMap[:], x, yPos, fill)
+		draw_rune(renderer, x, yPos, fill)
 	}
 }
 
-drawLineV :: proc(charMap: []u8, xPos, yPos, length: int, fill: rune = '*') {
+draw_line_v :: proc(renderer:^Renderer, xPos, yPos, length: int, fill: rune = '*') {
 	for y := yPos; y < yPos + length; y += 1 {
-		drawChar(charMap[:], xPos, y, fill)
+		draw_rune(renderer, xPos, y, fill)
 	}
 }
