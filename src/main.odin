@@ -1,9 +1,9 @@
 package main
 
 import "core:fmt"
-import "core:time"
 import "core:os"
 import "core:terminal"
+import "core:time"
 
 import "terminal_utility"
 
@@ -23,18 +23,18 @@ main :: proc() {
 	}
 	defer terminal_utility.disable_raw_mode(&termios)
 
+	fmt.print("\033[?25l") // Hide cursor during animation
+	defer fmt.println("\033[?25h") // Restore cursor at exit)
+
 	//get terminal size & set render maps size
 	T_WIDTH, T_HEIGHT := terminal_utility.get_size()
 
-	renderer: Renderer;
+	renderer: Renderer
 	set_new_size(&renderer, T_WIDTH, T_HEIGHT)
-	
+
 	gameState := GameState.PLAY
 
-	tmpStrBuf: [256]u8 // tmp string storage
-
-	fmt.print("\033[?25l") // Hide cursor during animation
-	defer fmt.println("\033[?25h") // Restore cursor at exit
+	menu: Menu = create_full_menu()
 
 	prevTime := time.now()
 	dt: time.Duration
@@ -55,16 +55,27 @@ main :: proc() {
 		//input
 		key, keyLen := terminal_utility.read_keypress()
 
-		draw_rune(&renderer, 0, 0, key)
+		if (keyLen > 0) {
+			dir: int
+			switch key {
+			case 'A':
+				dir = -1
+			case 'B':
+				dir = 1
+			}
 
-		
+			newIndex := menu.activeIndex + dir
+			if newIndex >= 0 && newIndex < menu.itemLength {
+				menu.activeIndex = newIndex
+			}
+		}
+
 		//draw calls
-		draw_rect(&renderer, 0, 0, renderer.width, renderer.height)
+		draw_rect(&renderer, 0, 0, renderer.width, renderer.height) // game frame
 
-		fpsString := fmt.bprint(tmpStrBuf[:], "frameTime:", dt)
-		draw_str(&renderer, 1, 1, fpsString)
-		
-		
+		draw_menu(&renderer, &menu, 0, 0)
+
+
 		// render
 		render(&renderer)
 		time.sleep(DELAY)
