@@ -12,7 +12,7 @@ GameState :: enum {
 	SHOULD_EXIT,
 }
 
-TARGET_FPS :: 60
+TARGET_FPS :: 60_000
 DELAY :: time.Second / TARGET_FPS
 
 main :: proc() {
@@ -49,8 +49,8 @@ main :: proc() {
 		elapsed += dt
 
 		//clear prevFrame
-		T_WIDTH, T_HEIGHT := terminal_utility.get_size()
-		set_new_size(&renderer, T_WIDTH, T_HEIGHT)
+		//T_WIDTH, T_HEIGHT := terminal_utility.get_size()
+		//set_new_size(&renderer, T_WIDTH, T_HEIGHT)
 
 		//input
 		key, keyLen := terminal_utility.read_keypress()
@@ -73,11 +73,15 @@ main :: proc() {
 		//draw calls
 		draw_rect(&renderer, 0, 0, renderer.width, renderer.height) // game frame
 
-		draw_menu(&renderer, &menu, 0, 0)
+		draw_str(&renderer, 1, 1, "dt:", dt)
+		draw_str(&renderer, 1, 2, "fps:", f64(time.Second) / f64(dt))
+		
+		draw_menu(&renderer, &menu, 10, 10)
 
 
 		// render
 		render(&renderer)
-		time.sleep(DELAY)
+		
+		//time.sleep(DELAY)
 	}
 }

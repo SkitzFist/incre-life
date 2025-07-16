@@ -7,6 +7,12 @@ MAX_BUF_SIZE :: 32_768
 
 TMP_STR_BUF: [256]u8
 
+get_u8 :: proc(str: string) -> []u8 {
+    return transmute([]u8)str
+}
+
+CURSOR_HOME: []u8 = get_u8("\x1b[H");
+
 Renderer :: struct {
 	width:  int,
 	height: int,
@@ -17,6 +23,10 @@ set_new_size :: proc(renderer: ^Renderer, newWidth: int, newHeight: int) {
 	renderer^.width = newWidth
 	renderer^.height = newHeight
 
+	if(newWidth * newHeight > MAX_BUF_SIZE){
+		fmt.println("ERROR: Size bigger then buf size")
+	}
+	
 	clear(renderer)
 }
 
@@ -30,9 +40,11 @@ clear :: proc(renderer: ^Renderer) {
 }
 
 render :: proc(renderer: ^Renderer) {
-	fmt.print("\x1b[H") // move cursor to top left
-	length := cast(uint)(renderer^.width * renderer^.height)
-	posix.write(posix.FD(1), &renderer^.buf[0], length)
+    #no_bounds_check{
+        posix.write(posix.FD(1), &CURSOR_HOME[0], len(CURSOR_HOME))
+	    length := cast(uint)(renderer^.width * renderer^.height)
+	    posix.write(posix.FD(1), &renderer^.buf[0], length)
+    }
 }
 
 //---- Drawing ----//
@@ -40,7 +52,7 @@ render :: proc(renderer: ^Renderer) {
 draw_rune :: proc(renderer: ^Renderer, x: int, y: int, char: rune) {
 	index := y * renderer^.width + x
 
-	if index >= len(renderer^.buf) {
+	if index < 0 || index >= len(renderer^.buf) {
 		return
 	}
 
