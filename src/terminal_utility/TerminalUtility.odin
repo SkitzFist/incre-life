@@ -1,44 +1,45 @@
 package terminal_utility
 
-import "core:sys/posix"
 import "core:sys/linux"
+import "core:sys/posix"
 
 enable_raw_mode :: proc() -> (old_termios: posix.termios, ok: bool) {
-    fd : posix.FD = 0 // stdin
-    
-    if posix.tcgetattr(fd, &old_termios) == .FAIL {
-        return old_termios, false
-    }
-    new_termios := old_termios
+	fd: posix.FD = 0 // stdin
 
-	flags_to_clear := bit_set[posix.CLocal_Flag_Bits; posix.tcflag_t]{posix.CLocal_Flag_Bits.ICANON, posix.CLocal_Flag_Bits.ECHO}
+	if posix.tcgetattr(fd, &old_termios) == .FAIL {
+		return old_termios, false
+	}
+	new_termios := old_termios
+
+	flags_to_clear := bit_set[posix.CLocal_Flag_Bits;posix.tcflag_t] {
+		posix.CLocal_Flag_Bits.ICANON,
+		posix.CLocal_Flag_Bits.ECHO,
+	}
 	new_termios.c_lflag &~= flags_to_clear
-    
-    
-    // Cast VMIN and VTIME to Control_Char (u8) for c_cc array
-    new_termios.c_cc[posix.Control_Char.VTIME] = 0
-    new_termios.c_cc[posix.Control_Char.VMIN] = 0
 
-    if posix.tcsetattr(fd, .TCSANOW, &new_termios) == .FAIL {
-        return old_termios, false
-    }
+	new_termios.c_cc[posix.Control_Char.VTIME] = 0
+	new_termios.c_cc[posix.Control_Char.VMIN] = 0
 
-    // Set stdin to non-blocking
-    flags := posix.fcntl(fd, .GETFL, 0)
-    if flags == -1 {
-        return old_termios, false
-    }
-    
-    if posix.fcntl(fd, .SETFL, flags | posix.O_NONBLOCK) == -1 {
-        return old_termios, false
-    }
+	if posix.tcsetattr(fd, .TCSANOW, &new_termios) == .FAIL {
+		return old_termios, false
+	}
 
-    return old_termios, true
+	// Set stdin to non-blocking
+	flags := posix.fcntl(fd, .GETFL, 0)
+	if flags == -1 {
+		return old_termios, false
+	}
+
+	if posix.fcntl(fd, .SETFL, flags | posix.O_NONBLOCK) == -1 {
+		return old_termios, false
+	}
+
+	return old_termios, true
 }
 
 // Restore terminal settings
 disable_raw_mode :: proc(old_termios: ^posix.termios) {
-    posix.tcsetattr(0, .TCSANOW, old_termios)
+	posix.tcsetattr(0, .TCSANOW, old_termios)
 }
 
 input_buf : [10]u8
@@ -49,12 +50,12 @@ read_keypress :: proc() -> (string, bool) {
     return string(input_buf[:n]), n > 0
 }
 
-WinSize :: struct{
-	rows, cols, xPixel, yPixel: u16
+WinSize :: struct {
+	rows, cols, xPixel, yPixel: u16,
 }
 
-get_size :: proc() -> (width:int, height:int){
-	TIOCGWINSZ :u32: 0x5413 //Request number from ioctl.h
+get_size :: proc() -> (width: int, height: int) {
+	TIOCGWINSZ: u32 : 0x5413 //Request number from ioctl.h
 	ws := WinSize{}
 
 	result := linux.ioctl(linux.Fd(0), TIOCGWINSZ, uintptr(&ws))
