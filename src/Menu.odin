@@ -45,28 +45,36 @@ get_menu_longest_item_length :: proc(menu: ^Menu) -> int {
 	return longest
 }
 
+
+/*
+	TODO: should calculate the entire string when an menu item has been added,
+		  draw the entire screen, and only update marker dynamically
+*/
 draw_menu :: proc(renderer: ^Renderer, menu: ^Menu, xPos: int, yPos: int) {
+	spacing :: 2
 
-	longest_word: int = get_menu_longest_item_length(menu)
-	spacing := 2
-	width: int = spacing * 2 + longest_word
+	totalWidth := 0
 
-	height := menu.itemLength * 2 + 1
+	for scene in menu^.items {
+		enumStr := fmt.enum_value_to_string(scene) or_continue
 
-	draw_rect(renderer, xPos, yPos, width, height)
+		totalWidth += len(enumStr)
+	}
 
-	for i := 0; i < menu^.itemLength; i += 1 {
-		str := fmt.enum_value_to_string(menu^.items[i]) or_continue
+	totalWidth += menu^.itemLength * spacing + 1
 
-		x := (width / 2) - (len(str) / 2) + xPos
-		y := 1 + (i * 2) + yPos
-		draw_str(renderer, x, y, str)
+	startX := renderer^.width / 2 - totalWidth / 2
+	x := startX
+	for scene, i in menu^.items {
+		enumStr := fmt.enum_value_to_string(scene) or_continue
+		enumLen := len(enumStr)
+		draw_str(renderer, x, yPos, enumStr)
 
-		if (i == menu^.activeIndex) {
-			//draw pointer
-			//draw_str(renderer, xPos + 1, y, pointer)
-			draw_rect(renderer, xPos, y - 1, width, 3, corner = '+', borderH = '*', borderV = '|')
+		if i == menu^.activeIndex {
+			//draw marker
+			draw_rect(renderer, x - 1, yPos - 1, enumLen + 2, 3)
 		}
 
+		x += enumLen + spacing
 	}
 }
