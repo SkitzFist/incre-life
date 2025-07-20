@@ -39,6 +39,8 @@ main :: proc() {
 
 	menu: Menu = create_full_menu()
 
+	schoolScene := SceneFunctions{testHandleInput, testUpdate, testRender}
+
 	prevTime := time.now()
 	dt: time.Duration
 	elapsed: time.Duration
@@ -81,7 +83,14 @@ main :: proc() {
 
 		//draw calls
 		draw_rect(&renderer, 0, 0, renderer.width, renderer.height) // game frame
-		draw_menu(&renderer, &menu, 0, 0)
+
+		draw_menu(&renderer, &menu, 0, 1)
+
+		if (menu.items[menu.activeIndex] == .SCHOOL) {
+			schoolScene.handleInput(key)
+			schoolScene.update(dt)
+			schoolScene.render(&renderer)
+		}
 
 		render(&renderer)
 				
