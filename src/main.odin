@@ -23,8 +23,11 @@ main :: proc() {
 	}
 	defer terminal_utility.disable_raw_mode(&termios)
 
-	fmt.print("\033[?25l") // Hide cursor during animation
-	defer fmt.println("\033[?25h") // Restore cursor at exit)
+	terminal_utility.enable_alternate_screen()
+	defer terminal_utility.disable_alternate_screen()
+
+	terminal_utility.hide_cursor()
+	defer terminal_utility.show_cursor()
 
 	//get terminal size & set render maps size
 	T_WIDTH, T_HEIGHT := terminal_utility.get_size()

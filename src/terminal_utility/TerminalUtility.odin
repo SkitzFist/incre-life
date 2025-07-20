@@ -1,7 +1,10 @@
 package terminal_utility
 
+import "core:fmt"
 import "core:sys/linux"
 import "core:sys/posix"
+
+input_buf : [10]u8
 
 enable_raw_mode :: proc() -> (old_termios: posix.termios, ok: bool) {
 	fd: posix.FD = 0 // stdin
@@ -42,7 +45,25 @@ disable_raw_mode :: proc(old_termios: ^posix.termios) {
 	posix.tcsetattr(0, .TCSANOW, old_termios)
 }
 
-input_buf : [10]u8
+enable_alternate_screen :: proc() {
+	fmt.print("\x1b[?1049h")
+}
+
+disable_alternate_screen :: proc() {
+	fmt.print("\x1b[0m") // Reset all text formatting
+	fmt.print("\x1b[2J") // clear screen
+	fmt.print("\x1b[H") // move cursor to home
+	fmt.print("\x1b[?1049l")
+}
+
+hide_cursor :: proc() {
+	fmt.print("\033[?25l")
+}
+
+show_cursor :: proc() {
+	fmt.println("\033[?25h")
+}
+
 // Read a single keypress non-blockingly
 read_keypress :: proc() -> (string, bool) {
     n := posix.read(0, &input_buf[0], 10)
