@@ -12,7 +12,7 @@ GameState :: enum {
 	SHOULD_EXIT,
 }
 
-TARGET_FPS :: 60_000
+TARGET_FPS :: 60
 DELAY :: time.Second / TARGET_FPS
 
 main :: proc() {
@@ -40,6 +40,9 @@ main :: proc() {
 	dt: time.Duration
 	elapsed: time.Duration
 
+	
+	lastInput:string // debug
+
 	for gameState != .SHOULD_EXIT {
 
 		//frametime		
@@ -49,19 +52,20 @@ main :: proc() {
 		elapsed += dt
 
 		//clear prevFrame
-		//T_WIDTH, T_HEIGHT := terminal_utility.get_size()
-		//set_new_size(&renderer, T_WIDTH, T_HEIGHT)
+		T_WIDTH, T_HEIGHT := terminal_utility.get_size()
+		set_new_size(&renderer, T_WIDTH, T_HEIGHT)
 
 		//input
-		key, keyLen := terminal_utility.read_keypress()
+		key, ok := terminal_utility.read_keypress()
 
-		if (keyLen > 0) {
+		if (ok) {
 			dir: int
+			lastInput = key
 			switch key {
-			case 'A':
-				dir = -1
-			case 'B':
-				dir = 1
+				case "\x1B[A":
+					dir = -1
+				case "\x1B[B":
+					dir = 1
 			}
 
 			newIndex := menu.activeIndex + dir
@@ -70,18 +74,14 @@ main :: proc() {
 			}
 		}
 
+		draw_str(&renderer,1,20, "Input: ", lastInput)
+
 		//draw calls
 		draw_rect(&renderer, 0, 0, renderer.width, renderer.height) // game frame
+		draw_menu(&renderer, &menu, 0, 0)
 
-		draw_str(&renderer, 1, 1, "dt:", dt)
-		draw_str(&renderer, 1, 2, "fps:", f64(time.Second) / f64(dt))
-		
-		draw_menu(&renderer, &menu, 10, 10)
-
-
-		// render
 		render(&renderer)
-		
-		//time.sleep(DELAY)
+				
+		time.sleep(DELAY)
 	}
 }
