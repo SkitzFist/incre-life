@@ -41,12 +41,12 @@ disable_raw_mode :: proc(old_termios: ^posix.termios) {
     posix.tcsetattr(0, .TCSANOW, old_termios)
 }
 
+input_buf : [10]u8
 // Read a single keypress non-blockingly
-read_keypress :: proc() -> (rune, int) {
-    buf: [1]u8
-    n := posix.read(0, &buf[0], 1)
+read_keypress :: proc() -> (string, bool) {
+    n := posix.read(0, &input_buf[0], 10)
 
-    return rune(buf[0]), n
+    return string(input_buf[:n]), n > 0
 }
 
 WinSize :: struct{
