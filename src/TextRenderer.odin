@@ -24,7 +24,7 @@ set_new_size :: proc(renderer: ^Renderer, newWidth: int, newHeight: int) {
 	renderer^.height = newHeight
 
 	if (newWidth * newHeight > MAX_BUF_SIZE) {
-		fmt.println("ERROR: Size bigger then buf size")
+		panic("ERROR: Size bigger then buf size")
 	}
 
 	clear(renderer)

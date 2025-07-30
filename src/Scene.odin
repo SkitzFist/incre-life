@@ -2,28 +2,93 @@ package main
 
 import "core:time"
 
-Scene :: enum {
+SceneType :: enum {
 	SCHOOL,
-	WORK,
 	TRAINING,
-	SHOP,
 	HOUSE,
+	WORK,
+	SHOP,
 }
 
 SceneFunctions :: struct {
-	handleInput: proc(input: rune),
-	update:      proc(dt: time.Duration),
-	render:      proc(renderer: ^Renderer),
+	handleInput: proc(data: ^GameData, input: string),
+	update:      proc(data: ^GameData, dt: time.Duration),
+	render:      proc(data: ^GameData, renderer: ^Renderer),
 }
 
-testHandleInput :: proc(input: rune) {
-
+create_scene_functions_empty :: proc() -> SceneFunctions {
+	return {}
 }
 
-testUpdate :: proc(dt: time.Duration) {
-
+create_scene_funcs :: proc() -> [len(SceneType)]SceneFunctions {
+	return {
+		create_scene_functions_empty(),
+		create_scene_functions_empty(),
+		create_scene_functions_empty(),
+		create_scene_functions_empty(),
+		create_scene_functions_empty(),
+	}
 }
 
-testRender :: proc(renderer: ^Renderer) {
-	draw_str(renderer, 1, 2, "Test Scene")
+Scene :: struct {
+	active:    SceneType,
+	available: bit_set[SceneType],
+}
+
+create_scene_full :: proc() -> Scene {
+	return {active = .SCHOOL, available = ~bit_set[SceneType]{}}
+}
+
+create_scene_default :: proc() -> Scene {
+	return {active = .SCHOOL, available = {.SCHOOL}}
+}
+
+create_scene_partial :: proc(types: ..SceneType) -> Scene {
+	available: bit_set[SceneType]
+	lowestIndex := 99
+	for type in types {
+		if cast(int)type < lowestIndex {
+			lowestIndex = cast(int)type
+		}
+		available += {type}
+	}
+
+
+	return {active = SceneType(lowestIndex), available = available}
+}
+
+set_scene_available :: proc(scene: ^Scene, type: SceneType) {
+	scene^.available += {type}
+}
+
+set_scene_unavailable :: proc(scene: ^Scene, type: SceneType) {
+	scene^.available -= {type}
+}
+
+get_next_available_scene :: proc(scene: ^Scene) -> SceneType {
+	i := cast(int)scene^.active
+	count := len(SceneType)
+
+	for step in 1 ..< count {
+		next := (i + step) % count
+		if SceneType(next) in scene^.available {
+			return SceneType(next)
+		}
+	}
+
+	return scene^.active
+}
+
+get_prev_available_scene :: proc(scene: ^Scene) -> SceneType {
+	i := cast(int)scene^.active
+	count := len(SceneType)
+
+	for step in 1 ..< count {
+		prev := (i - step + count) % count
+		if SceneType(prev) in scene^.available {
+			return SceneType(prev)
+		}
+	}
+
+	return scene^.active
 }

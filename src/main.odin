@@ -37,63 +37,68 @@ main :: proc() {
 
 	gameState := GameState.PLAY
 
-	menu: Menu = create_full_menu()
-
-	schoolScene := SceneFunctions{testHandleInput, testUpdate, testRender}
+	data := create_game_data()
 
 	prevTime := time.now()
 	dt: time.Duration
-	elapsed: time.Duration
 
-	
-	lastInput:string // debug
+	lastInput: string // debug
 
-	for gameState != .SHOULD_EXIT {
+	gameLoop: for gameState != .SHOULD_EXIT {
 
 		//frametime		
 		currentTime := time.now()
 		dt = time.diff(prevTime, currentTime)
 		prevTime = currentTime
-		elapsed += dt
 
 		//clear prevFrame
 		T_WIDTH, T_HEIGHT := terminal_utility.get_size()
 		set_new_size(&renderer, T_WIDTH, T_HEIGHT)
 
 		//input
-		key, ok := terminal_utility.read_keypress()
+		input, ok := terminal_utility.read_keypress()
 
 		if (ok) {
 			dir: int
-			lastInput = key
-			switch key {
-				case "\x1B[A":
-					dir = -1
-				case "\x1B[B":
-					dir = 1
+			lastInput = input
+			switch input {
+			case "q":
+				gameState = .SHOULD_EXIT
+				break gameLoop
+			case "w":
+				set_scene_available(&data.scene, .WORK)
 			}
 
-			newIndex := menu.activeIndex + dir
-			if newIndex >= 0 && newIndex < menu.itemLength {
-				menu.activeIndex = newIndex
+			menu_handle_input(&data.scene, input)
+
+			if data.sceneFuncs[data.scene.active].handleInput != nil {
+				data.sceneFuncs[data.scene.active].handleInput(&data, input)
 			}
 		}
 
-		draw_str(&renderer,1,20, "Input: ", lastInput)
+		// update
+		if data.sceneFuncs[data.scene.active].update != nil {
+			data.sceneFuncs[data.scene.active].update(&data, dt)
+		}
+
+		//debug
+		draw_str(&renderer, 1, renderer.height - 2, "Input: ", lastInput)
 
 		//draw calls
 		draw_rect(&renderer, 0, 0, renderer.width, renderer.height) // game frame
 
-		draw_menu(&renderer, &menu, 0, 1)
+		// Header
+		draw_rect(&renderer, 0, 0, renderer.width, STAT_Y + 2) // header border
+		draw_menu(&renderer, &data.scene, 0, 1)
+		draw_stats(&renderer, &data.stats, 1, STAT_Y)
 
-		if (menu.items[menu.activeIndex] == .SCHOOL) {
-			schoolScene.handleInput(key)
-			schoolScene.update(dt)
-			schoolScene.render(&renderer)
+		if data.sceneFuncs[data.scene.active].render != nil {
+			data.sceneFuncs[data.scene.active].render(&data, &renderer)
 		}
 
+		// render frame
 		render(&renderer)
-				
+
 		time.sleep(DELAY)
 	}
 }
