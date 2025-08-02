@@ -1,72 +1,46 @@
 package main
 
-import "core:math"
-
-//debug
 import "core:fmt"
 
-Menu :: struct {
-	items:       [len(Scene)]Scene,
-	itemLength:  int,
-	activeIndex: int,
-}
+menu_handle_input :: proc(scene: ^Scene, input: string) {
 
-create_full_menu :: proc() -> Menu {
-	items := [len(Scene)]Scene{}
-	for i in 0 ..< len(Scene) {
-		items[i] = Scene(i)
+	switch input {
+	case "\e[Z":
+		scene^.active = get_prev_available_scene(scene)
+	case "\t":
+		scene^.active = get_next_available_scene(scene)
 	}
 
-	return Menu{items = items, itemLength = len(Scene), activeIndex = 0}
 }
 
-add_menu_item :: proc(menu: ^Menu, item: Scene) {
-	if cap(menu^.items) == menu^.itemLength {
-		return
-	}
+draw_menu :: proc(renderer: ^Renderer, scene: ^Scene, xPos: int, yPos: int) {
+	spacing :: 2
+	totalWidth := 0
+	length := 0
 
-	menu^.items[menu^.itemLength] = item
-
-	menu^.itemLength += 1
-}
-
-get_menu_longest_item_length :: proc(menu: ^Menu) -> int {
-	longest: int
-
-	for i := 0; i < menu^.itemLength; i += 1 {
-		enumStr := fmt.enum_value_to_string(menu^.items[i]) or_continue
-
-		wordLength := len(enumStr)
-		if (longest < wordLength) {
-			longest = wordLength
+	for type in SceneType {
+		if type in scene^.available {
+			length += 1
+			enumStr := fmt.enum_value_to_string(type) or_continue
+			totalWidth += len(enumStr)
 		}
 	}
 
-	return longest
-}
+	totalWidth += length * spacing + 1
+	x := renderer^.width / 2 - totalWidth / 2
 
-draw_menu :: proc(renderer: ^Renderer, menu: ^Menu, xPos: int, yPos: int) {
+	for type in SceneType {
+		if type in scene^.available {
+			enumStr := fmt.enum_value_to_string(type) or_continue
+			enumLen := len(enumStr)
+			draw_str(renderer, x, yPos, enumStr)
 
-	longest_word: int = get_menu_longest_item_length(menu)
-	spacing := 2
-	width: int = spacing * 2 + longest_word
+			if type == scene^.active {
+				//draw marker
+				draw_rect(renderer, x - 1, yPos - 1, enumLen + 2, 3)
+			}
 
-	height := menu.itemLength * 2 + 1
-
-	draw_rect(renderer, xPos, yPos, width, height)
-
-	for i := 0; i < menu^.itemLength; i += 1 {
-		str := fmt.enum_value_to_string(menu^.items[i]) or_continue
-
-		x := (width / 2) - (len(str) / 2) + xPos
-		y := 1 + (i * 2) + yPos
-		draw_str(renderer, x, y, str)
-
-		if (i == menu^.activeIndex) {
-			//draw pointer
-			//draw_str(renderer, xPos + 1, y, pointer)
-			draw_rect(renderer, xPos, y - 1, width, 3, corner = '+', borderH = '*', borderV = '|')
+			x += enumLen + spacing
 		}
-
 	}
 }

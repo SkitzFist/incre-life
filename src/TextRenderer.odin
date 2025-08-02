@@ -8,10 +8,10 @@ MAX_BUF_SIZE :: 32_768
 TMP_STR_BUF: [256]u8
 
 get_u8 :: proc(str: string) -> []u8 {
-    return transmute([]u8)str
+	return transmute([]u8)str
 }
 
-CURSOR_HOME: []u8 = get_u8("\x1b[H");
+CURSOR_HOME: []u8 = get_u8("\x1b[H")
 
 Renderer :: struct {
 	width:  int,
@@ -23,10 +23,10 @@ set_new_size :: proc(renderer: ^Renderer, newWidth: int, newHeight: int) {
 	renderer^.width = newWidth
 	renderer^.height = newHeight
 
-	if(newWidth * newHeight > MAX_BUF_SIZE){
-		fmt.println("ERROR: Size bigger then buf size")
+	if (newWidth * newHeight > MAX_BUF_SIZE) {
+		panic("ERROR: Size bigger then buf size")
 	}
-	
+
 	clear(renderer)
 }
 
@@ -40,11 +40,11 @@ clear :: proc(renderer: ^Renderer) {
 }
 
 render :: proc(renderer: ^Renderer) {
-    #no_bounds_check{
-        posix.write(posix.FD(1), &CURSOR_HOME[0], len(CURSOR_HOME))
-	    length := cast(uint)(renderer^.width * renderer^.height)
-	    posix.write(posix.FD(1), &renderer^.buf[0], length)
-    }
+	#no_bounds_check {
+		posix.write(posix.FD(1), &CURSOR_HOME[0], len(CURSOR_HOME))
+		length := cast(uint)(renderer^.width * renderer^.height)
+		posix.write(posix.FD(1), &renderer^.buf[0], length)
+	}
 }
 
 //---- Drawing ----//
@@ -73,7 +73,7 @@ draw_str_args :: proc(renderer: ^Renderer, x: int, y: int, args: ..any) {
 
 draw_str :: proc {
 	draw_str_plain,
-	draw_str_args
+	draw_str_args,
 }
 
 draw_rect :: proc(
