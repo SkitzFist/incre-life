@@ -20,13 +20,13 @@ create_scene_functions_empty :: proc() -> SceneFunctions {
 	return {}
 }
 
-create_scene_funcs :: proc() -> [len(SceneType)]SceneFunctions {
+create_scene_funcs :: proc() -> [SceneType]SceneFunctions {
 	return {
-		create_scene_functions_empty(),
-		create_scene_functions_empty(),
-		create_scene_functions_empty(),
-		create_scene_functions_empty(),
-		create_scene_functions_empty(),
+		.SCHOOL = {school_handleInput, school_update, school_render},
+		.TRAINING = create_scene_functions_empty(),
+		.HOUSE = create_scene_functions_empty(),
+		.WORK = create_scene_functions_empty(),
+		.SHOP = create_scene_functions_empty(),
 	}
 }
 
@@ -45,7 +45,7 @@ create_scene_default :: proc() -> Scene {
 
 create_scene_partial :: proc(types: ..SceneType) -> Scene {
 	available: bit_set[SceneType]
-	lowestIndex := 99
+	lowestIndex := len(SceneType)
 	for type in types {
 		if cast(int)type < lowestIndex {
 			lowestIndex = cast(int)type

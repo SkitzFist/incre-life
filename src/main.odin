@@ -71,6 +71,7 @@ main :: proc() {
 
 			menu_handle_input(&data.scene, input)
 
+
 			if data.sceneFuncs[data.scene.active].handleInput != nil {
 				data.sceneFuncs[data.scene.active].handleInput(&data, input)
 			}

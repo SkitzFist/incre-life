@@ -6,14 +6,16 @@ SCENE_Y :: HEADER_HEIGHT
 
 GameData :: struct {
 	scene:      Scene,
-	sceneFuncs: [len(SceneType)]SceneFunctions,
+	sceneFuncs: [SceneType]SceneFunctions,
 	stats:      Stats,
+	school:     School,
 }
 
 create_game_data :: proc() -> GameData {
 	return {
-		scene = create_scene_partial(.HOUSE, .SCHOOL),
+		scene = create_scene_partial(.SCHOOL),
 		sceneFuncs = create_scene_funcs(),
 		stats = create_stats_full(),
+		school = create_school_default(),
 	}
 }

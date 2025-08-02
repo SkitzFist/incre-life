@@ -6,8 +6,9 @@ StatType :: enum {
 	INT,
 	AGI,
 	STR,
+	CON,
 	WIS,
-	CHAR,
+	CHA,
 }
 
 Stats :: struct {
