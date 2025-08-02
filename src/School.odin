@@ -66,6 +66,8 @@ school_update :: proc(data: ^GameData, dt: time.Duration) {
 	if data^.school.subjectProgression[subject] >= target_duration {
 		data^.school.subjectProgression[subject] = 0
 		data^.school.subjectsLevel[subject] += 1
+
+		on_level_up(data, &SUBJECT_LEVEL_UP[subject], data^.school.subjectsLevel[subject])
 	}
 }
 
@@ -79,9 +81,9 @@ school_render :: proc(data: ^GameData, renderer: ^Renderer) {
 	selectorX :: 2
 	subjectNameX :: selectorX + len(selector) + 1
 	levelX :: subjectNameX + 16
-	progressX :: levelX + 3
+	progressX :: levelX + 5
 	progressWidth :: 16
-	buf: [64]u8 = {}
+	buf: [32]u8 = {}
 	for subject in Subject {
 		if subject in SCHOOL_LEVEL_SUBJECTS[data^.school.currentSchoolLevel] &&
 		   is_requirement_met(data, &SUBJECT_REQUIREMENTS[subject]) {
@@ -99,8 +101,11 @@ school_render :: proc(data: ^GameData, renderer: ^Renderer) {
 			str := string(buf[:length])
 
 			draw_str(renderer, subjectNameX, y, str)
+
+			//level
 			draw_str(renderer, levelX, y, data^.school.subjectsLevel[subject])
 
+			//progress bar
 			draw_progress_bar(
 				renderer,
 				progressX,

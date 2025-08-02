@@ -29,10 +29,19 @@ Subject :: enum {
     */
 }
 
+// todo potentially move to SchoolLevel and have each level have it's own duration
+// alternatively let it be on subject level, but with option for different algorithms
 get_subject_duration :: proc(level: int) -> time.Duration {
-	return math.max(time.Second * time.Duration(level), time.Second * 1)
+	affector := level
+	if level == 0 {
+		affector = 1
+	}
+
+	return time.Second * time.Duration(affector / 2)
 }
 
+/////////////////////////
+///    Requirement   ///
 SUBJECT_REQUIREMENTS: [Subject]RequirementList = {
 	.NONE          = {},
 	.SCRIPTURE     = {scripture_requirements[:]},
@@ -53,3 +62,27 @@ farming_requirements: [1]Requirement = {StatRequirement{.CON, 0}}
 mock_battle_requirements: [2]Requirement = {StatRequirement{.STR, 0}, StatRequirement{.AGI, 0}}
 @(private = "file")
 common_tongue_requirements: [1]Requirement = {StatRequirement{.CHA, 0}}
+
+
+/////////////////////////
+///    On Level Up   ///
+
+SUBJECT_LEVEL_UP: [Subject]OnlevelUpList = {
+	.NONE          = {},
+	.SCRIPTURE     = {scripture_level_up[:]},
+	.COUNTING      = {counting_level_up[:]},
+	.FARMING       = {farming_level_up[:]},
+	.MOCK_BATTLE   = {mock_battle_level_up[:]},
+	.COMMON_TONGUE = {common_tongue_level_up[:]},
+}
+
+@(private = "file")
+scripture_level_up: [2]OnLevelUp = {StatGain{.WIS, 3, 1}, StatGain{.INT, 3, 1}}
+@(private = "file")
+counting_level_up: [1]OnLevelUp = {StatGain{.INT, 2, 1}}
+@(private = "file")
+farming_level_up: [1]OnLevelUp = {StatGain{.CON, 2, 1}}
+@(private = "file")
+mock_battle_level_up: [2]OnLevelUp = {StatGain{.STR, 3, 1}, StatGain{.AGI, 2, 1}}
+@(private = "file")
+common_tongue_level_up: [1]OnLevelUp = {StatGain{.CHA, 2, 1}}

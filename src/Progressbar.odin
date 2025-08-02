@@ -7,7 +7,9 @@ draw_progress_bar :: proc(renderer: ^Renderer, x: int, y: int, width: int, progr
 	draw_rune(renderer, x + width, y, '|')
 
 	maxFillWidth := width
-	fillLength := math.floor(cast(f64)width * progress)
+
+	p := math.min(progress, 1.0)
+	fillLength := math.floor(cast(f64)width * p)
 
 	for fillX := x + 1; fillX < x + cast(int)fillLength; fillX += 1 {
 		draw_rune(renderer, fillX, y, '*')
