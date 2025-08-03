@@ -78,6 +78,7 @@ main :: proc() {
 		}
 
 		// update
+		elapse_time(&data.time, dt)
 		if data.sceneFuncs[data.scene.active].update != nil {
 			data.sceneFuncs[data.scene.active].update(&data, dt)
 		}
@@ -89,8 +90,9 @@ main :: proc() {
 		draw_rect(&renderer, 0, 0, renderer.width, renderer.height) // game frame
 
 		// Header
-		draw_rect(&renderer, 0, 0, renderer.width, STAT_Y + 2) // header border
-		draw_menu(&renderer, &data.scene, 0, 1)
+		draw_rect(&renderer, 0, 0, renderer.width, HEADER_HEIGHT) // header border
+		draw_menu(&renderer, &data.scene, 0, MENU_Y)
+		draw_time(&renderer, &data.time, TIME_Y)
 		draw_stats(&renderer, &data.stats, 1, STAT_Y)
 
 		if data.sceneFuncs[data.scene.active].render != nil {
