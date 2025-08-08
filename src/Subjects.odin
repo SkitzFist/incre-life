@@ -42,13 +42,13 @@ get_subject_duration :: proc(level: int) -> time.Duration {
 
 /////////////////////////
 ///    Requirement   ///
-SUBJECT_REQUIREMENTS: [Subject]RequirementList = {
+SUBJECT_REQUIREMENTS: [Subject][]Requirement = {
 	.NONE          = {},
-	.SCRIPTURE     = {scripture_requirements[:]},
-	.COUNTING      = {counting_requirements[:]},
-	.FARMING       = {farming_requirements[:]},
-	.MOCK_BATTLE   = {mock_battle_requirements[:]},
-	.COMMON_TONGUE = {common_tongue_requirements[:]},
+	.SCRIPTURE     = scripture_requirements[:],
+	.COUNTING      = counting_requirements[:],
+	.FARMING       = farming_requirements[:],
+	.MOCK_BATTLE   = mock_battle_requirements[:],
+	.COMMON_TONGUE = common_tongue_requirements[:],
 }
 
 
@@ -66,23 +66,28 @@ common_tongue_requirements: [1]Requirement = {StatRequirement{.CHA, 0}}
 
 /////////////////////////
 ///    On Level Up   ///
-
-SUBJECT_LEVEL_UP: [Subject]OnlevelUpList = {
+SUBJECT_LEVEL_UP: [Subject][]OnTrigger = {
 	.NONE          = {},
-	.SCRIPTURE     = {scripture_level_up[:]},
-	.COUNTING      = {counting_level_up[:]},
-	.FARMING       = {farming_level_up[:]},
-	.MOCK_BATTLE   = {mock_battle_level_up[:]},
-	.COMMON_TONGUE = {common_tongue_level_up[:]},
+	.SCRIPTURE     = scripture_level_up[:],
+	.COUNTING      = counting_level_up[:],
+	.FARMING       = farming_level_up[:],
+	.MOCK_BATTLE   = mock_battle_level_up[:],
+	.COMMON_TONGUE = common_tongue_level_up[:],
 }
 
 @(private = "file")
-scripture_level_up: [2]OnLevelUp = {StatGain{.WIS, 3, 1}, StatGain{.INT, 3, 1}}
+scripture_level_up: [2]OnTrigger = {
+	SubjectModuloStatGain{.SCRIPTURE, .WIS, 3, 1},
+	SubjectModuloStatGain{.SCRIPTURE, .INT, 3, 1},
+}
 @(private = "file")
-counting_level_up: [1]OnLevelUp = {StatGain{.INT, 2, 1}}
+counting_level_up: [1]OnTrigger = {SubjectModuloStatGain{.COUNTING, .INT, 2, 1}}
 @(private = "file")
-farming_level_up: [1]OnLevelUp = {StatGain{.CON, 2, 1}}
+farming_level_up: [1]OnTrigger = {SubjectModuloStatGain{.FARMING, .CON, 2, 1}}
 @(private = "file")
-mock_battle_level_up: [2]OnLevelUp = {StatGain{.STR, 3, 1}, StatGain{.AGI, 2, 1}}
+mock_battle_level_up: [2]OnTrigger = {
+	SubjectModuloStatGain{.MOCK_BATTLE, .AGI, 2, 1},
+	SubjectModuloStatGain{.MOCK_BATTLE, .STR, 2, 1},
+}
 @(private = "file")
-common_tongue_level_up: [1]OnLevelUp = {StatGain{.CHA, 2, 1}}
+common_tongue_level_up: [1]OnTrigger = {SubjectModuloStatGain{.COMMON_TONGUE, .INT, 2, 1}}
