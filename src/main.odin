@@ -44,8 +44,7 @@ main :: proc() {
 
 	lastInput: string // debug
 
-	add_event_to_queue(&data, &TEST_EVENT)
-	add_event_to_queue(&data, &DYNAMIC_YEAR_EVENT_TEST)
+	add_event(&data, EventEnum.INTRO)
 
 	gameLoop: for gameState != .SHOULD_EXIT {
 
@@ -63,6 +62,10 @@ main :: proc() {
 		}
 
 		isEventOngoing := data.activeEventIndex != -1
+
+		if isEventOngoing {
+			isEventOngoing = fire_event(&data)
+		}
 
 		//input
 		input, ok := terminal_utility.read_keypress()
@@ -85,8 +88,8 @@ main :: proc() {
 				isEventOngoing = data.activeEventIndex != -1
 			} else {
 				menu_handle_input(&data.scene, input)
-				if data.sceneFuncs[data.scene.active].handleInput != nil {
-					data.sceneFuncs[data.scene.active].handleInput(&data, input)
+				if SCENE_FUNCS[data.scene.active].handleInput != nil {
+					SCENE_FUNCS[data.scene.active].handleInput(&data, input)
 				}
 			}
 		}
@@ -96,14 +99,13 @@ main :: proc() {
 			//handle event update, if any? otherwise remove this block
 		} else {
 			elapse_time(&data.time, dt)
-			if data.sceneFuncs[data.scene.active].update != nil {
-				data.sceneFuncs[data.scene.active].update(&data, dt)
+			if SCENE_FUNCS[data.scene.active].update != nil {
+				SCENE_FUNCS[data.scene.active].update(&data, dt)
 			}
 		}
 
 		//debug
 		draw_str(&renderer, 1, renderer.height - 2, "Input: ", lastInput)
-		draw_str(&renderer, 1, renderer.height - 3, "Event: ", isEventOngoing)
 
 		//draw calls
 		draw_rect(&renderer, 0, 0, renderer.width, renderer.height) // game frame
@@ -114,10 +116,11 @@ main :: proc() {
 		draw_time(&renderer, &data.time, TIME_Y)
 		draw_stats(&renderer, &data.stats, 1, STAT_Y)
 
-		if data.sceneFuncs[data.scene.active].render != nil {
-			data.sceneFuncs[data.scene.active].render(&data, &renderer)
+		if SCENE_FUNCS[data.scene.active].render != nil {
+			SCENE_FUNCS[data.scene.active].render(&data, &renderer)
 		}
 
+		//must always be called last to render above other stuff
 		if isEventOngoing {
 			event_render(&data, &renderer)
 		}

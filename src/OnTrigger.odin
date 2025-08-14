@@ -16,10 +16,15 @@ SceneUnlock :: struct {
 	type: SceneType,
 }
 
+AgeGain :: struct {
+	years: int,
+}
+
 OnTrigger :: union {
 	StatGain,
 	SubjectModuloStatGain,
 	SceneUnlock,
+	AgeGain,
 }
 
 on_trigger :: proc(data: ^GameData, gains: []OnTrigger) {
@@ -37,6 +42,10 @@ on_trigger :: proc(data: ^GameData, gains: []OnTrigger) {
 		case SceneUnlock:
 			set_scene_available(&data.scene, g.type)
 			data.scene.active = g.type
+
+		case AgeGain:
+			data.time.year += g.years
+			data.time.age += g.years
 		}
 	}
 }

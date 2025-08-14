@@ -14,6 +14,9 @@ SceneFunctions :: struct {
 	render:      proc(data: ^GameData, renderer: ^Renderer),
 }
 
+
+SCENE_FUNCS: [SceneType]SceneFunctions = create_scene_funcs()
+
 create_scene_funcs :: proc() -> [SceneType]SceneFunctions {
 	return {.NONE = {}, .SCHOOL = {school_handleInput, school_update, school_render}, .MARKET = {}}
 }
