@@ -15,7 +15,7 @@ Time :: struct {
 }
 
 create_default_time :: proc() -> Time {
-	return {age = 12, year = 1, day = 0, dayDuration = time.Millisecond * 1500, active = true}
+	return {age = 10, year = 1, day = 0, dayDuration = time.Millisecond * 1500, active = true}
 }
 
 elapse_time :: proc(t: ^Time, dt: time.Duration) {

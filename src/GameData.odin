@@ -7,19 +7,23 @@ HEADER_HEIGHT :: STAT_Y + 2
 SCENE_Y :: HEADER_HEIGHT
 
 GameData :: struct {
-	scene:      Scene,
-	sceneFuncs: [SceneType]SceneFunctions,
-	stats:      Stats,
-	school:     School,
-	time:       Time,
+	eventQueue:        EventQueue,
+	activeEventIndex:  int,
+	eventChoiceMap:    EventChoiceMap,
+	ongoingEventInput: OngoingEventInput,
+	scene:             Scene,
+	stats:             Stats,
+	time:              Time,
+	school:            School,
 }
 
 create_game_data :: proc() -> GameData {
 	return {
-		scene = create_scene_full(),
-		sceneFuncs = create_scene_funcs(),
+		eventQueue = create_event_queue_default(),
+		activeEventIndex = -1,
+		scene = create_scene_default(),
 		stats = create_stats_full(),
-		school = create_school_default(),
 		time = create_default_time(),
+		school = create_school_default(),
 	}
 }

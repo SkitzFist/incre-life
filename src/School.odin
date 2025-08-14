@@ -11,6 +11,7 @@ School :: struct {
 	subjectsLevel:           [Subject]int,
 	subjectProgression:      [Subject]time.Duration,
 	subjectProgressionRatio: [Subject]f64,
+	finishedLevel:           bit_set[SchoolLevel],
 }
 
 create_school_default :: proc() -> School {
@@ -44,7 +45,7 @@ get_selectable_subject :: proc(data: ^GameData, prev: bool) -> Subject {
 
 		subject := Subject(next)
 		if subject in SCHOOL_LEVEL_SUBJECTS[data^.school.currentSchoolLevel] &&
-		   is_requirement_met(data, &SUBJECT_REQUIREMENTS[subject]) {
+		   is_requirement_met(data, SUBJECT_REQUIREMENTS[subject]) {
 			return subject
 		}
 	}
@@ -67,7 +68,7 @@ school_update :: proc(data: ^GameData, dt: time.Duration) {
 		data^.school.subjectProgression[subject] = 0
 		data^.school.subjectsLevel[subject] += 1
 
-		on_level_up(data, &SUBJECT_LEVEL_UP[subject], data^.school.subjectsLevel[subject])
+		on_trigger(data, SUBJECT_LEVEL_UP[subject])
 	}
 }
 
@@ -86,7 +87,7 @@ school_render :: proc(data: ^GameData, renderer: ^Renderer) {
 	buf: [32]u8 = {}
 	for subject in Subject {
 		if subject in SCHOOL_LEVEL_SUBJECTS[data^.school.currentSchoolLevel] &&
-		   is_requirement_met(data, &SUBJECT_REQUIREMENTS[subject]) {
+		   is_requirement_met(data, SUBJECT_REQUIREMENTS[subject]) {
 
 			// draw selection
 			if subject == data^.school.selectedSubject || subject == data^.school.activeSubject {

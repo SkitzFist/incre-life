@@ -85,7 +85,7 @@ draw_rect :: proc(
 	corner: rune = '+',
 	borderH: rune = '-',
 	borderV: rune = '|',
-	fill: rune = ' ',
+	fill: rune = '?',
 ) {
 	endX := xPos + width - 1
 	endY := yPos + height - 1
@@ -100,6 +100,12 @@ draw_rect :: proc(
 	draw_rune(renderer, endX, yPos, corner)
 	draw_rune(renderer, xPos, endY, corner)
 	draw_rune(renderer, endX, endY, corner)
+
+	if fill != '?' {
+		for i in 1 ..< height - 1 {
+			draw_line_h(renderer, xPos + 1, yPos + i, width - 2, fill)
+		}
+	}
 }
 
 draw_line_h :: proc(renderer: ^Renderer, xPos, yPos, length: int, fill: rune = '*') {

@@ -44,6 +44,8 @@ main :: proc() {
 
 	lastInput: string // debug
 
+	add_event(&data, EventEnum.INTRO)
+
 	gameLoop: for gameState != .SHOULD_EXIT {
 
 		//frametime		
@@ -55,6 +57,16 @@ main :: proc() {
 		T_WIDTH, T_HEIGHT := terminal_utility.get_size()
 		set_new_size(&renderer, T_WIDTH, T_HEIGHT)
 
+		if data.activeEventIndex == -1 {
+			data.activeEventIndex = get_fireable_event(&data)
+		}
+
+		isEventOngoing := data.activeEventIndex != -1
+
+		if isEventOngoing {
+			isEventOngoing = fire_event(&data)
+		}
+
 		//input
 		input, ok := terminal_utility.read_keypress()
 
@@ -62,25 +74,34 @@ main :: proc() {
 			dir: int
 			lastInput = input
 			switch input {
-			case "q":
+			case "\e":
 				gameState = .SHOULD_EXIT
 				break gameLoop
-			case "w":
-				set_scene_available(&data.scene, .WORK)
+			case "+":
+				data.time.dayDuration /= 2
+			case "-":
+				data.time.dayDuration *= 2
 			}
 
-			menu_handle_input(&data.scene, input)
-
-
-			if data.sceneFuncs[data.scene.active].handleInput != nil {
-				data.sceneFuncs[data.scene.active].handleInput(&data, input)
+			if isEventOngoing {
+				event_handle_input(&data, input)
+				isEventOngoing = data.activeEventIndex != -1
+			} else {
+				menu_handle_input(&data.scene, input)
+				if SCENE_FUNCS[data.scene.active].handleInput != nil {
+					SCENE_FUNCS[data.scene.active].handleInput(&data, input)
+				}
 			}
 		}
 
 		// update
-		elapse_time(&data.time, dt)
-		if data.sceneFuncs[data.scene.active].update != nil {
-			data.sceneFuncs[data.scene.active].update(&data, dt)
+		if isEventOngoing {
+			//handle event update, if any? otherwise remove this block
+		} else {
+			elapse_time(&data.time, dt)
+			if SCENE_FUNCS[data.scene.active].update != nil {
+				SCENE_FUNCS[data.scene.active].update(&data, dt)
+			}
 		}
 
 		//debug
@@ -95,8 +116,13 @@ main :: proc() {
 		draw_time(&renderer, &data.time, TIME_Y)
 		draw_stats(&renderer, &data.stats, 1, STAT_Y)
 
-		if data.sceneFuncs[data.scene.active].render != nil {
-			data.sceneFuncs[data.scene.active].render(&data, &renderer)
+		if SCENE_FUNCS[data.scene.active].render != nil {
+			SCENE_FUNCS[data.scene.active].render(&data, &renderer)
+		}
+
+		//must always be called last to render above other stuff
+		if isEventOngoing {
+			event_render(&data, &renderer)
 		}
 
 		// render frame

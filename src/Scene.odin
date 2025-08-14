@@ -3,11 +3,9 @@ package main
 import "core:time"
 
 SceneType :: enum {
+	NONE,
 	SCHOOL,
-	TRAINING,
-	HOUSE,
-	WORK,
-	SHOP,
+	MARKET,
 }
 
 SceneFunctions :: struct {
@@ -16,18 +14,11 @@ SceneFunctions :: struct {
 	render:      proc(data: ^GameData, renderer: ^Renderer),
 }
 
-create_scene_functions_empty :: proc() -> SceneFunctions {
-	return {}
-}
+
+SCENE_FUNCS: [SceneType]SceneFunctions = create_scene_funcs()
 
 create_scene_funcs :: proc() -> [SceneType]SceneFunctions {
-	return {
-		.SCHOOL = {school_handleInput, school_update, school_render},
-		.TRAINING = create_scene_functions_empty(),
-		.HOUSE = create_scene_functions_empty(),
-		.WORK = create_scene_functions_empty(),
-		.SHOP = create_scene_functions_empty(),
-	}
+	return {.NONE = {}, .SCHOOL = {school_handleInput, school_update, school_render}, .MARKET = {}}
 }
 
 Scene :: struct {
@@ -40,7 +31,7 @@ create_scene_full :: proc() -> Scene {
 }
 
 create_scene_default :: proc() -> Scene {
-	return {active = .SCHOOL, available = {.SCHOOL}}
+	return {active = .NONE, available = {}}
 }
 
 create_scene_partial :: proc(types: ..SceneType) -> Scene {
@@ -59,10 +50,12 @@ create_scene_partial :: proc(types: ..SceneType) -> Scene {
 
 set_scene_available :: proc(scene: ^Scene, type: SceneType) {
 	scene^.available += {type}
+	//Could trigger onActivated function
 }
 
 set_scene_unavailable :: proc(scene: ^Scene, type: SceneType) {
 	scene^.available -= {type}
+	//Could trigger onUnActivated function
 }
 
 get_next_available_scene :: proc(scene: ^Scene) -> SceneType {
