@@ -1,133 +1,217 @@
 package main
 
 import "core:fmt"
-import "core:os"
-import "core:terminal"
-import "core:time"
+import rl "vendor:raylib"
 
-import "terminal_utility"
+WINDOW_WIDTH :: 1280
+WINDOW_HEIGHT :: 600
 
-GameState :: enum {
-	PLAY,
-	SHOULD_EXIT,
-}
 
-TARGET_FPS :: 60
-DELAY :: time.Second / TARGET_FPS
+DEBUG_WIDTH :: 100
+FONTSIZE: i32 : 16
+SECTION_PADDING :: 20
+
+GLYPH_WIDTH :: 16
+GLYPH_HEIGHT :: 24
+
+TERMINAL_COLS :: 200
+TERMINAL_ROWS :: 100
+
+TERMINAL_WIDTH :: GLYPH_WIDTH * TERMINAL_COLS
+TERMINAL_HEIGHT :: GLYPH_HEIGHT * TERMINAL_ROWS
+
+ASCII_START: int : 33
+
+BUF: [TERMINAL_COLS * TERMINAL_HEIGHT]u8
 
 main :: proc() {
-	termios, ok := terminal_utility.enable_raw_mode()
-	if !ok {
-		fmt.println("Could not enable raw mode")
-		return
+	rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Incre-Life")
+	rl.SetWindowState({rl.ConfigFlag.WINDOW_RESIZABLE})
+
+	//font image
+	fontImage: rl.Image = rl.LoadImage("assets/fonts/Skz-Font.png")
+	defer rl.UnloadImage(fontImage)
+
+	fontTexture: rl.Texture2D = rl.LoadTextureFromImage(fontImage)
+	defer rl.UnloadTexture(fontTexture)
+
+	rl.SetTextureFilter(fontTexture, rl.TextureFilter.POINT)
+	rl.SetTextureWrap(fontTexture, rl.TextureWrap.CLAMP)
+
+	// BUF
+	for i in 0 ..< len(BUF) {
+		BUF[i] = u8(i % 9)
 	}
-	defer terminal_utility.disable_raw_mode(&termios)
 
-	terminal_utility.enable_alternate_screen()
-	defer terminal_utility.disable_alternate_screen()
+	bufImage: rl.Image = {
+		data    = raw_data(BUF[:]),
+		width   = TERMINAL_COLS,
+		height  = TERMINAL_ROWS,
+		mipmaps = 1,
+		format  = rl.PixelFormat.UNCOMPRESSED_GRAYSCALE,
+	}
 
-	terminal_utility.hide_cursor()
-	defer terminal_utility.show_cursor()
+	bufTexture := rl.LoadTextureFromImage(bufImage)
+	defer rl.UnloadTexture(bufTexture)
 
-	//get terminal size & set render maps size
-	T_WIDTH, T_HEIGHT := terminal_utility.get_size()
+	rl.SetTextureFilter(bufTexture, rl.TextureFilter.POINT)
+	rl.SetTextureWrap(bufTexture, rl.TextureWrap.CLAMP)
 
-	renderer: Renderer
-	set_new_size(&renderer, T_WIDTH, T_HEIGHT)
+	// shader
+	textShader := rl.LoadShader("shaders/TextShader.vs", "shaders/TextShader.fs")
+	defer rl.UnloadShader(textShader)
 
-	gameState := GameState.PLAY
+	fontTextureLoc := rl.GetShaderLocation(textShader, "fontTexture")
+	bufTextureLoc := rl.GetShaderLocation(textShader, "bufTexture")
+	rl.SetShaderValueTexture(textShader, fontTextureLoc, fontTexture)
+	rl.SetShaderValueTexture(textShader, bufTextureLoc, bufTexture)
 
-	data := create_game_data()
+	rectPosLoc := rl.GetShaderLocation(textShader, "rectPos")
+	rectSizeLoc := rl.GetShaderLocation(textShader, "rectSize")
+	windowHeightLoc := rl.GetShaderLocation(textShader, "windowHeight")
+	terminalColsLoc := rl.GetShaderLocation(textShader, "terminalCols")
+	atlasColsLoc := rl.GetShaderLocation(textShader, "atlasCols")
 
-	prevTime := time.now()
-	dt: time.Duration
+	height := f32(WINDOW_HEIGHT)
+	rl.SetShaderValue(textShader, windowHeightLoc, &height, rl.ShaderUniformDataType.FLOAT)
 
-	lastInput: string // debug
+	terminalCols := int(TERMINAL_COLS)
+	rl.SetShaderValue(textShader, terminalColsLoc, &terminalCols, rl.ShaderUniformDataType.INT)
 
-	add_event(&data, EventEnum.INTRO)
+	atlasCols := 3
+	rl.SetShaderValue(textShader, atlasColsLoc, &atlasCols, rl.ShaderUniformDataType.INT)
 
-	gameLoop: for gameState != .SHOULD_EXIT {
+	shaderMode := true
 
-		//frametime		
-		currentTime := time.now()
-		dt = time.diff(prevTime, currentTime)
-		prevTime = currentTime
+	for !rl.WindowShouldClose() {
 
-		//clear prevFrame
-		T_WIDTH, T_HEIGHT := terminal_utility.get_size()
-		set_new_size(&renderer, T_WIDTH, T_HEIGHT)
-
-		if data.activeEventIndex == -1 {
-			data.activeEventIndex = get_fireable_event(&data)
+		if rl.IsWindowResized() {
+			height := f32(rl.GetScreenHeight())
+			rl.SetShaderValue(textShader, windowHeightLoc, &height, rl.ShaderUniformDataType.FLOAT)
 		}
-
-		isEventOngoing := data.activeEventIndex != -1
-
-		if isEventOngoing {
-			isEventOngoing = fire_event(&data)
-		}
-
+		dt := rl.GetFrameTime()
 		//input
-		input, ok := terminal_utility.read_keypress()
+		if rl.IsKeyPressed(rl.KeyboardKey.ESCAPE) {
+			rl.CloseWindow()
+			break
+		} else if rl.IsKeyPressed(rl.KeyboardKey.TAB) {
+			shaderMode = !shaderMode
+		}
 
-		if (ok) {
-			dir: int
-			lastInput = input
-			switch input {
-			case "\e":
-				gameState = .SHOULD_EXIT
-				break gameLoop
-			case "+":
-				data.time.dayDuration /= 2
-			case "-":
-				data.time.dayDuration *= 2
-			}
+		//update
 
-			if isEventOngoing {
-				event_handle_input(&data, input)
-				isEventOngoing = data.activeEventIndex != -1
-			} else {
-				menu_handle_input(&data.scene, input)
-				if SCENE_FUNCS[data.scene.active].handleInput != nil {
-					SCENE_FUNCS[data.scene.active].handleInput(&data, input)
+		//render
+		rl.BeginDrawing()
+		rl.ClearBackground(rl.RAYWHITE)
+
+
+		x: i32 = DEBUG_WIDTH + SECTION_PADDING * 2
+		y: i32 = 10
+
+		//font;texture
+		rl.DrawTexture(fontTexture, x, y, rl.BLACK)
+		x += fontTexture.width + SECTION_PADDING
+		//x += rl.MeasureText(fontTextureText, FONTSIZE) + SECTION_PADDING
+		rl.DrawLine(x, 0, x, WINDOW_HEIGHT, rl.BLACK)
+		x += SECTION_PADDING
+
+		//terminal
+		if shaderMode {
+
+			rl.BeginShaderMode(textShader)
+			pos: [2]f32 = {f32(x), f32(y)}
+			size: [2]f32 = {f32(TERMINAL_WIDTH), f32(TERMINAL_HEIGHT)}
+
+			rl.SetShaderValueTexture(textShader, fontTextureLoc, fontTexture)
+			rl.SetShaderValueTexture(textShader, bufTextureLoc, bufTexture)
+			rl.SetShaderValue(textShader, rectPosLoc, &pos, rl.ShaderUniformDataType.VEC2)
+			rl.SetShaderValue(textShader, rectSizeLoc, &size, rl.ShaderUniformDataType.VEC2)
+			rl.DrawRectangle(x, y, TERMINAL_WIDTH, TERMINAL_HEIGHT, rl.BLACK)
+			rl.EndShaderMode()
+
+		} else {
+			src: rl.Rectangle = {0, 0, GLYPH_WIDTH, GLYPH_HEIGHT}
+			dst: rl.Rectangle = {0.0, 0.0, GLYPH_WIDTH, GLYPH_HEIGHT}
+			origin: rl.Vector2 = {0.0, 0.0}
+
+			for c_y: i32 = 0; c_y < TERMINAL_ROWS; c_y += 1 {
+				for c_x: i32 = 0; c_x < TERMINAL_COLS; c_x += 1 {
+					glyphIndex := BUF[c_y * TERMINAL_COLS + c_x]
+
+					glyphY := glyphIndex / u8(atlasCols)
+					glyphX := glyphIndex % u8(atlasCols)
+
+					src.x = f32(glyphX * GLYPH_WIDTH)
+					src.y = f32(glyphY * GLYPH_HEIGHT)
+
+					cellX := x + c_x * i32(GLYPH_WIDTH)
+					cellY := y + c_y * i32(GLYPH_HEIGHT)
+					dst.x = f32(cellX)
+					dst.y = f32(cellY)
+					//rl.DrawRectangleLines(cellX, cellY, GLYPH_WIDTH, GLYPH_HEIGHT, rl.BLACK)
+					rl.DrawTexturePro(fontTexture, src, dst, origin, 0.0, rl.BLACK)
 				}
 			}
 		}
 
-		// update
-		if isEventOngoing {
-			//handle event update, if any? otherwise remove this block
-		} else {
-			elapse_time(&data.time, dt)
-			if SCENE_FUNCS[data.scene.active].update != nil {
-				SCENE_FUNCS[data.scene.active].update(&data, dt)
-			}
-		}
+		//CPU built for debug purpose
 
-		//debug
-		draw_str(&renderer, 1, renderer.height - 2, "Input: ", lastInput)
 
-		//draw calls
-		draw_rect(&renderer, 0, 0, renderer.width, renderer.height) // game frame
-
-		// Header
-		draw_rect(&renderer, 0, 0, renderer.width, HEADER_HEIGHT) // header border
-		draw_menu(&renderer, &data.scene, 0, MENU_Y)
-		draw_time(&renderer, &data.time, TIME_Y)
-		draw_stats(&renderer, &data.stats, 1, STAT_Y)
-
-		if SCENE_FUNCS[data.scene.active].render != nil {
-			SCENE_FUNCS[data.scene.active].render(&data, &renderer)
-		}
-
-		//must always be called last to render above other stuff
-		if isEventOngoing {
-			event_render(&data, &renderer)
-		}
-
-		// render frame
-		render(&renderer)
-
-		time.sleep(DELAY)
+		draw_debug_info(dt, shaderMode)
+		rl.EndDrawing()
 	}
+}
+
+convert_index :: proc(codepoint: rune) -> int {
+	return int(u8(codepoint) - u8(ASCII_START))
+}
+
+convert_fake_index :: proc(codepoint: rune) -> u8 {
+	switch codepoint {
+	case ' ':
+		return 0
+	case '!':
+		return 1
+	case '"':
+		return 2
+	case '#':
+		return 3
+	case '$':
+		return 4
+	case '%':
+		return 5
+	case 'A':
+		return 6
+	case 'B':
+		return 7
+	case 'C':
+		return 8
+	}
+
+	return 0
+}
+
+draw_debug_info :: proc(dt: f32, mode: bool) {
+	x: i32 = SECTION_PADDING / 2
+	y: i32 = 1
+
+	fpsText := fmt.ctprintf("FPS: %d", rl.GetFPS())
+	rl.DrawText(fpsText, x, y, FONTSIZE, rl.BLACK)
+	y += i32(rl.MeasureTextEx(rl.GetFontDefault(), fpsText, f32(FONTSIZE), 1).y)
+
+	modeText: cstring
+	if mode {
+		modeText = fmt.ctprintf("mode: shader")
+	} else {
+		modeText = fmt.ctprintf("mode: cpu")
+	}
+
+	rl.DrawText(modeText, x, y, FONTSIZE, rl.BLACK)
+	y += i32(rl.MeasureTextEx(rl.GetFontDefault(), modeText, f32(FONTSIZE), 1).y)
+
+	gridText := fmt.ctprintf("Grid: %ix%i", TERMINAL_COLS, TERMINAL_ROWS)
+	rl.DrawText(gridText, x, y, FONTSIZE, rl.BLACK)
+
+	x = DEBUG_WIDTH + SECTION_PADDING
+	rl.DrawLine(x, 0, x, WINDOW_HEIGHT, rl.BLACK)
 }

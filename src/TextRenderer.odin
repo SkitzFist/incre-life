@@ -39,7 +39,7 @@ clear :: proc(renderer: ^Renderer) {
 	}
 }
 
-render :: proc(renderer: ^Renderer) {
+render_terminal :: proc(renderer: ^Renderer) {
 	#no_bounds_check {
 		posix.write(posix.FD(1), &CURSOR_HOME[0], len(CURSOR_HOME))
 		length := cast(uint)(renderer^.width * renderer^.height)
