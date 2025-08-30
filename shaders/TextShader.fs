@@ -9,8 +9,8 @@ uniform sampler2D bufTexture;
 uniform vec2 rectPos;
 uniform vec2 rectSize;
 uniform float windowHeight;
-uniform int terminalCols;
 uniform int atlasCols;
+uniform float scale;
 
  // todo receive glyph width/height as uniform
 const float GLYPH_WIDTH = 16.0;
@@ -24,11 +24,10 @@ void main() {
 
     if (any(lessThan(localPos, vec2(0.0))) || any(greaterThanEqual(localPos, rectSize))) discard;
 
-    const vec2 cellSize = vec2(GLYPH_WIDTH, GLYPH_HEIGHT);
-    vec2  cellIndex   = floor(localPos / cellSize);
-    vec2  pixelInCell = mod(localPos, cellSize);
 
-    int linearIndex = int(cellIndex.y * terminalCols + cellIndex.x);
+    vec2 cellSize = vec2(GLYPH_WIDTH, GLYPH_HEIGHT) * scale;
+    vec2  cellIndex   = floor(localPos / cellSize);
+    vec2  pixelInCell = mod(localPos, cellSize) / scale;
 
     ivec2 bufSize = textureSize(bufTexture, 0);
     int cx = clamp(int(cellIndex.x), 0, bufSize.x - 1);
